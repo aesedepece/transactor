@@ -36,7 +36,7 @@ pub struct Transaction {
     /// The unique ID of the client that initiated this transaction; or the client that initiated
     /// the transaction referred in `transaction_id` in the case of disputes, resolutions, and
     /// chargebacks.
-    pub client: ClientId,
+    pub client_id: ClientId,
     /// The unique ID of this transaction; or he unique ID of a `deposit` or `withdraw` transaction
     /// in the case of disputes, resolutions, and chargebacks.
     pub transaction_id: TransactionId,

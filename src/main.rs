@@ -3,6 +3,8 @@ pub mod accounts;
 /// The main data structure that will act as the core of our runtime and will implement the business
 /// logic of transaction processing.
 pub mod engine;
+/// Centralizes error definition and handling.
+pub mod errors;
 /// Everything related with transactions and their semantics.
 pub mod transactions;
 /// Centralized type definitions for essential data types such as transaction IDS, client IDs,
