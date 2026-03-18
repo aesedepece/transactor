@@ -1,5 +1,6 @@
 use crate::{
     errors::Error,
+    movements::{BalanceHistory, Movement, MovementType},
     transactions::{Transaction, TransactionType},
     types::*,
 };
@@ -13,13 +14,12 @@ mod tests;
 ///
 /// The client ID is omitted here because this structure is meant to be indexed using that fields as
 /// the indexed key in the context of an `AccountsSystem`.
-// TODO: add a history field that allows recovering transaction info later if needed for disputes or
-//  traceability
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Account {
     available_balance: Value,
     held_balance: Value,
     locked: bool,
+    balance_history: BalanceHistory,
 }
 
 impl Account {
@@ -33,7 +33,7 @@ impl Account {
     /// semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
-    pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<Account, Error> {
+    pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         // Before anything else, we must check that the account is in a good state, i.e. it is not
         // locked. It is assumed that transactions cannot be processed for a locked account.
         // As a consequence of controlling locked / good state here, lower-level functions like
@@ -44,18 +44,21 @@ impl Account {
             let tx = transaction;
 
             let result = match tx.transaction_type {
-                TransactionType::Deposit => self.deposit(tx.amount),
-                TransactionType::Withdrawal => self.withdraw(tx.amount),
-                TransactionType::Dispute => Ok(()),
-                TransactionType::Resolve => Ok(()),
-                TransactionType::Chargeback => Ok(()),
+                TransactionType::Deposit => self.deposit(tx.amount).map(Some),
+                TransactionType::Withdrawal => self.withdraw(tx.amount).map(Some),
+                TransactionType::Dispute => Ok(None),
+                TransactionType::Resolve => Ok(None),
+                TransactionType::Chargeback => Ok(None),
             };
 
-            // TODO: push the transaction into the account's transaction history, allowing to
-            //  recover its info later if needed for disputes or traceability
-            if result.is_ok() {}
+            // If processing the transaction resulted in the creation of a new movement (it was
+            // either a deposit or a withdrawal), it is time to add it to the account's balance
+            // history.
+            if let Ok(Some(movement)) = result {
+                self.balance_history.push(tx.transaction_id, movement);
+            }
 
-            result.map(|_| *self)
+            result.map(|_| &*self)
         } else {
             Err(Error::LockedAccount)
         }
@@ -64,7 +67,7 @@ impl Account {
     /// Process a deposit.
     ///
     /// Simply adds an amount of monetary value into the available balance of the account.
-    fn deposit(&mut self, amount: Option<Value>) -> Result<(), Error> {
+    fn deposit(&mut self, amount: Option<Value>) -> Result<Movement, Error> {
         if let Some(amount) = amount {
             // Early return if amount is a negative number because... what does a negative deposit
             // even mean!?!?
@@ -75,7 +78,10 @@ impl Account {
             // All good, the available balance can be incremented
             self.available_balance += amount;
 
-            Ok(())
+            // Derive movement from transaction
+            let movement = Movement::new(MovementType::Deposit, amount, self.available_balance);
+
+            Ok(movement)
         } else {
             Err(Error::DepositWithoutAmount)
         }
@@ -84,7 +90,7 @@ impl Account {
     /// Process a withdrawal.
     ///
     /// Simply removes an amount of monetary value from the available balance of the account.
-    fn withdraw(&mut self, amount: Option<Value>) -> Result<(), Error> {
+    fn withdraw(&mut self, amount: Option<Value>) -> Result<Movement, Error> {
         if let Some(withdrawing) = amount {
             // Early return if amount is a negative number because... what does a negative
             // withdrawal even mean!?!?
@@ -104,7 +110,14 @@ impl Account {
             // All good, the available balance can be decremented
             self.available_balance = available - withdrawing;
 
-            Ok(())
+            // Derive movement from transaction
+            let movement = Movement::new(
+                MovementType::Withdrawal,
+                withdrawing,
+                self.available_balance,
+            );
+
+            Ok(movement)
         } else {
             Err(Error::WithdrawalWithoutAmount)
         }
@@ -161,7 +174,7 @@ impl AccountsSystem {
     /// mutating it as expected from the semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
-    fn process_transaction(&mut self, transaction: &Transaction) -> Result<Account, Error> {
+    fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         // The entry API makes it convenient, efficient and safe to "upsert" account entries into
         // our system, i.e. creating the entry if it does not exist before even trying to process
         // the transaction.

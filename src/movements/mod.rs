@@ -90,7 +90,7 @@ impl Movement {
 ///
 /// Internal usage of `IndexMap` guarantees that we can fetch the entire history in the original
 /// order of insertion, and individual entries queried by ID, both with `O(1)` complexity.
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct BalanceHistory {
     history: IndexMap<TransactionId, Movement>,
 }

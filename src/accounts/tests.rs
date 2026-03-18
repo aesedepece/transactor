@@ -45,11 +45,11 @@ fn processing_deposits() {
     // An unlocked account can process a deposit with a positive amount, and the available balance
     // gets incremented accordingly
     let deposit_amount = Value::from(123.456);
-    assert_eq!(account.deposit(Some(deposit_amount)), Ok(()));
+    assert!(account.deposit(Some(deposit_amount)).is_ok());
     assert_eq!(account.available_balance, deposit_amount);
 
     // Further deposits can be made on the same account, and balance is added up
-    assert_eq!(account.deposit(Some(deposit_amount)), Ok(()));
+    assert!(account.deposit(Some(deposit_amount)).is_ok());
     assert_eq!(
         account.available_balance,
         deposit_amount.mul(Value::from(2.0))
@@ -71,6 +71,8 @@ fn processing_deposits() {
     // Those are tested separately for the function `process_transaction()`.
     // For more color on why this is just fine, please check the comments in the body of function
     // `process_transaction()`.
+    // Movement derivation is not tested here for a similar reason: it only happens at a higher
+    // level where the system is aware of transactions and transaction IDs.
 }
 
 #[test]
@@ -84,14 +86,14 @@ fn processing_withdrawals() {
     // An unlocked account can process a deposit with a positive amount, and the available balance
     // gets decremented accordingly
     let withdrawal_amount = Value::from(123.456);
-    assert_eq!(account.withdraw(Some(withdrawal_amount)), Ok(()));
+    assert!(account.withdraw(Some(withdrawal_amount)).is_ok());
     assert_eq!(
         account.available_balance,
         initial_amount - withdrawal_amount
     );
 
     // Further deposits can be made on the same account, and balance is added up
-    assert_eq!(account.withdraw(Some(withdrawal_amount)), Ok(()));
+    assert!(account.withdraw(Some(withdrawal_amount)).is_ok());
     assert_eq!(
         account.available_balance,
         initial_amount - withdrawal_amount.mul(Value::from(2.0))
@@ -118,11 +120,20 @@ fn processing_withdrawals() {
     );
 
     // But you can sweep your account and leave it empty though
-    assert_eq!(
-        account.withdraw(Some(
-            initial_amount - withdrawal_amount.mul(Value::from(2.0))
-        )),
-        Ok(())
+    assert!(
+        account
+            .withdraw(Some(
+                initial_amount - withdrawal_amount.mul(Value::from(2.0))
+            ))
+            .is_ok()
     );
     assert_eq!(account.available_balance, Value::zero());
+
+    // Please note that withdrawals on locked accounts are not tested here because account locks
+    // operate on a higher level.
+    // Those are tested separately for the function `process_transaction()`.
+    // For more color on why this is just fine, please check the comments in the body of function
+    // `process_transaction()`.
+    // Movement derivation is not tested here for a similar reason: it only happens at a higher
+    // level where the system is aware of transactions and transaction IDs.
 }
