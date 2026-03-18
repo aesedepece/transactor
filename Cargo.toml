@@ -10,3 +10,5 @@ keywords = ["transaction", "deposit", "withdrawal", "account", "balance"]
 description = "A robust transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks."
 
 [dependencies]
+# The gold standard for error handling and formatting these days, better in every way than the old `failure`.
+thiserror = "2.0.18"
