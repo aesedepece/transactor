@@ -7,9 +7,12 @@ repository = "aesedepece/transactor"
 readme = "README.md"
 license-file = "LICENSE"
 keywords = ["transaction", "deposit", "withdrawal", "account", "balance"]
-description = "A robust transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks."
+description = "A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks."
 
 [dependencies]
+# Clever solution to having a transaction history where you can query by key and get the whole list of entries in the
+# original order of insertion, both with O(1) complexity.
+indexmap = "2.13.0"
 # A standard in the Rust ecosystem for numeric traits such as `num::traits::Zero`, which in our case gives us a lot of
 # adaptability if type aliases need to be changed in the future.
 num = "0.4.3"

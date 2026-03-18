@@ -1,8 +1,14 @@
+use crate::movements::MovementStatus;
 use crate::types::*;
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
     #[error("tried to process a deposit without specifying an amount")]
     DepositWithoutAmount,
+    #[error("illegal movement status transition from {from:?} to {to:?}")]
+    IllegalMovementStatusTransition {
+        from: MovementStatus,
+        to: MovementStatus,
+    },
     #[error("tried to process a transaction for an account that is locked")]
     LockedAccount,
     #[error("unknown or indeterminate error: {_0}")]

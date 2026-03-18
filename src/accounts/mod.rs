@@ -153,10 +153,8 @@ impl AccountsSystem {
     }
 
     /// Get a mutable reference to the account entry matching a client ID.
-    // TODO: allow upserting by returning the mutable entry itself
-    #[inline]
-    fn get_account_mut(&mut self, id: ClientId) -> Option<&mut Account> {
-        self.accounts.get_mut(&id)
+    fn get_account_mut(&mut self, id: ClientId) -> &mut Account {
+        self.accounts.entry(id).or_default()
     }
 
     /// Apply a transaction on an account allegedly contained in the accounts system, internally
@@ -169,9 +167,7 @@ impl AccountsSystem {
         // the transaction.
         // In this case, it is fine to initialize the account entry to its default value (balances
         // set to zero, no lock, no history).
-        self.accounts
-            .entry(transaction.client_id)
-            .or_default()
+        self.get_account_mut(transaction.client_id)
             .process_transaction(transaction)
     }
 }

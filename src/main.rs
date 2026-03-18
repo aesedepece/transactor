@@ -5,6 +5,7 @@ pub mod accounts;
 pub mod engine;
 /// Centralizes error definition and handling.
 pub mod errors;
+pub mod movements;
 /// Everything related with transactions and their semantics.
 pub mod transactions;
 /// Centralized type definitions for essential data types such as transaction IDS, client IDs,
