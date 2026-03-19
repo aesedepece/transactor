@@ -1,0 +1,28 @@
+name: Publish to Crates.io upon pushing a new tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify Unit Tests
+        run: cargo test
+
+      - name: Verify E2E Tests
+        run: |
+          cargo run --features deterministic -- tests/test_input.csv > actual_output.csv
+          diff actual_output.csv tests/expected_output.csv
+
+      - name: Cargo Publish
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }}
