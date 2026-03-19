@@ -1,6 +1,12 @@
-# Transactor
-
-**A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks.**
+<div align="center">
+    <h1>TRANSACTOR</h1>
+    <p><strong>A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks.</strong></p>
+    <br/>
+    <a href="https://github.com/aesedepece/transactor/actions"><img src="https://github.com/aesedepece/transactor/actions/workflows/ci.yml/badge.svg" alt="Build Status" /></a>
+    <a href="https://github.com/aesedepece/transactor/graphs/contributors"><img src="https://img.shields.io/github/contributors/aesedepece/transactor.svg" alt="GitHub contributors" /></a>
+    <a href="https://github.com/aesedepece/transactor/commits/master"><img src="https://img.shields.io/github/last-commit/aesedepece/transactor.svg" alt="Github last commit" /></a>
+    <a href="https://github.com/aesedepece/transactor/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aesedepece/transactor.svg" alt="GPLv3 Licensed" /></a>
+</div>
 
 ## Design Philosophy
 

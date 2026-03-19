@@ -1,4 +1,4 @@
-name: Run tests upon pushing to master/main
+name: Rust CI
 
 on:
   push:
