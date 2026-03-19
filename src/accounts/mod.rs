@@ -376,6 +376,9 @@ pub struct AccountsSystem {
 
 impl AccountsSystem {
     /// Get an immutable reference to the account entry matching a client ID.
+    ///
+    /// In practice, this is only used in tests, hence why it is guarded behind `#[cfg(test)]`.
+    #[cfg(test)]
     #[inline]
     fn get_account(&self, id: ClientId) -> Option<&Account> {
         self.accounts.get(&id)
@@ -390,7 +393,7 @@ impl AccountsSystem {
     /// mutating it as expected from the semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
-    fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
+    pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         // The entry API makes it convenient, efficient and safe to "upsert" account entries into
         // our system, i.e. creating the entry if it does not exist before even trying to process
         // the transaction.

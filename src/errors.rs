@@ -7,6 +7,8 @@ pub enum Error {
         transaction: TransactionId,
         client: ClientId,
     },
+    #[error("a CSV error occurred: {message}")]
+    CsvError { message: String },
     #[error("tried to process a deposit without specifying an amount")]
     DepositWithoutAmount,
     #[error(
@@ -22,6 +24,11 @@ pub enum Error {
     IllegalMovementStatusTransition {
         from: MovementStatus,
         to: MovementStatus,
+    },
+    #[error("an IO error of kind {kind} occurred: {message}")]
+    IoError {
+        kind: std::io::ErrorKind,
+        message: String,
     },
     #[error("tried to process a transaction for an account that is locked")]
     LockedAccount,
@@ -43,4 +50,21 @@ pub enum Error {
     WithdrawalWithoutAmount,
     #[error("cannot process transactions with a zero or negative amount ({_0})")]
     ZeroOrNegativeAmount(Value),
+}
+
+impl From<std::io::Error> for Error {
+    fn from(internal: std::io::Error) -> Self {
+        Error::IoError {
+            kind: internal.kind(),
+            message: internal.to_string(),
+        }
+    }
+}
+
+impl From<csv::Error> for Error {
+    fn from(internal: csv::Error) -> Self {
+        Error::CsvError {
+            message: internal.to_string(),
+        }
+    }
 }

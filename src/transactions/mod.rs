@@ -1,8 +1,10 @@
 use crate::types::*;
+use serde::{Deserialize, Serialize};
 #[cfg(test)]
 mod tests;
 
 /// Covers the different types of transactions that we can apply on an user account.
+#[derive(Deserialize, Serialize)]
 pub enum TransactionType {
     /// A user deposited an amount of value that needs to be added to their balance.
     Deposit,
@@ -29,6 +31,7 @@ pub enum TransactionType {
 }
 
 /// The main data structure holding data for a transaction.
+#[derive(Deserialize, Serialize)]
 pub struct Transaction {
     /// Tells how to process the transaction based on what it is representing, e.g. (deposits,
     /// withdrawals, etc.)

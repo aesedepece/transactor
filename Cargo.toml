@@ -10,10 +10,17 @@ keywords = ["transaction", "deposit", "withdrawal", "account", "balance"]
 description = "A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks."
 
 [dependencies]
+# Provides the main CSV deserialization and serialization functionality.
+# Suggested by the specification.
+csv = "1.4.0"
 # Gives us fixed precision floats, which are strictly needed to guarantee 4-digit decimal precision.
-fixed = "1.30.0"
+# Feature flag "serde" is needed for deserialization and serialization of these floats from and into CSVs.
+fixed = { version = "1.30.0", features = ["serde"] }
 # Clever solution to having a transaction history where you can query by key and get the whole list of entries in the
 # original order of insertion, both with O(1) complexity.
 indexmap = "2.13.0"
 # The gold standard for error handling and formatting these days, better in every way than the old `failure`.
 thiserror = "2.0.18"
+# Needed for deriving deserialization and serialization for transactions.
+# Suggested by the specification.
+serde = { version = "1.0.228", features = ["derive"] }
