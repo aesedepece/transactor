@@ -46,6 +46,7 @@ impl Account {
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
     pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
+        log::trace!("Processing transaction: {:?}", transaction);
         // Before anything else, we must check that the account is in a good state, i.e. it is not
         // locked. It is assumed that transactions cannot be processed for a locked account.
         // As a consequence of controlling locked / good state here, lower-level functions like

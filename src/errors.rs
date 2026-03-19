@@ -25,7 +25,7 @@ pub enum Error {
         from: MovementStatus,
         to: MovementStatus,
     },
-    #[error("an IO error of kind {kind} occurred: {message}")]
+    #[error("an IO error of kind \"{kind}\" occurred: {message}")]
     IoError {
         kind: std::io::ErrorKind,
         message: String,

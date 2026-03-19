@@ -1,4 +1,4 @@
-use crate::{engine::TransactorEngine, types::ClientId};
+use crate::{engine::Engine, types::ClientId};
 
 const SAMPLE_INPUT_VECTOR: &str = r#"type, client, tx, amount
 deposit, 1, 1, 1.0
@@ -17,7 +17,7 @@ fn csv_loading() {
     let data = SAMPLE_INPUT_VECTOR.as_bytes();
 
     // Can load transactions from CSV data
-    let mut engine = TransactorEngine::default();
+    let mut engine = Engine::default();
     assert_eq!(engine.load_transactions_from_reader(data), Ok(()));
 
     // The total balance of client #1 should be 1.5 (1 + 2 - 1.5 = 1.5)
@@ -45,7 +45,7 @@ fn csv_loading() {
 #[test]
 fn csv_outputting() {
     let data = SAMPLE_INPUT_VECTOR.as_bytes();
-    let mut engine = TransactorEngine::default();
+    let mut engine = Engine::default();
     _ = engine.load_transactions_from_reader(data);
 
     let mut output = Vec::new();

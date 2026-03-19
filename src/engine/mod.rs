@@ -12,13 +12,13 @@ mod tests;
 /// - Provides functions for loading and decoding transactions from CSV files, as well as for
 ///   representing and outputting the final state of the accounts in CSV format.
 #[derive(Default)]
-pub struct TransactorEngine {
+pub struct Engine {
     /// The accounts system that will track balances and movements, and will be able to process
     /// transactions.
     accounts: AccountsSystem,
 }
 
-impl TransactorEngine {
+impl Engine {
     /// Apply a transaction on an account allegedly contained in the accounts system, internally
     /// mutating it as expected from the semantics of the transaction type.
     ///
@@ -109,7 +109,7 @@ impl TransactorEngine {
             csv_writer
                 .serialize(account_line)
                 .map_err(Error::from)
-                .inspect_err(|err| log::warn!("{}", err))?;
+                .inspect_err(|err| log::error!("{}", err))?;
         }
 
         // Writers must be flush upon completion of the writing to make sure that data goes to the

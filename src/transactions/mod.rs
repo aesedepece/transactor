@@ -4,7 +4,7 @@ use serde::Deserialize;
 mod tests;
 
 /// Covers the different types of transactions that we can apply on an user account.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransactionType {
     /// A user deposited an amount of value that needs to be added to their balance.
@@ -32,7 +32,7 @@ pub enum TransactionType {
 }
 
 /// The main data structure holding data for a transaction.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Transaction {
     /// Tells how to process the transaction based on what it is representing, e.g. (deposits,
     /// withdrawals, etc.)

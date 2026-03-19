@@ -24,5 +24,7 @@ thiserror = "2.0.18"
 # Needed for deriving deserialization and serialization for transactions.
 # Suggested by the specification.
 serde = { version = "1.0.228", features = ["derive"] }
-# A must for proper logging of runtime errors
+# A must for proper logging of runtime errors.
 log = "0.4.29"
+# Goes hand in hand with `log`.
+env_logger = "0.11.9"
