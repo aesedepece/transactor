@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>TRANSACTOR</h1>
+    <h1><img src="https://raw.githubusercontent.com/aesedepece/transactor/refs/heads/master/.github/logo.svg" alt="TRANSACTOR" /></h1>
     <p><strong>A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks.</strong></p>
     <br/>
     <a href="https://crates.io/crates/transactor"><img src="https://img.shields.io/crates/v/transactor.svg" alt="Crates.io page" /></a>
