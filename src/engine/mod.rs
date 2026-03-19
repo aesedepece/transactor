@@ -3,15 +3,15 @@ use crate::{
     errors::Error,
     transactions::Transaction,
 };
-use std::fs::File;
 
 #[cfg(test)]
 mod tests;
 
-/// The main component that conforms the runtime of this app:
+/// The main component that conforms the runtime of this program:
 /// - In its very core lays one instance of an accounts system.
 /// - Provides functions for loading and decoding transactions from CSV files, as well as for
 ///   representing and outputting the final state of the accounts in CSV format.
+#[derive(Default)]
 pub struct TransactorEngine {
     /// The accounts system that will track balances and movements, and will be able to process
     /// transactions.
@@ -30,38 +30,102 @@ impl TransactorEngine {
     /// Load, decode and process transactions from a generic read handle that allegedly contains CSV
     /// data representing transactions.
     ///
-    /// The use of the generics and static dispatching here allows us to use this function both for
+    /// The use of generics and static dispatching here allows us to use this function both for
     /// reading from a local file in the actual runtime, and from a data structure in tests.
     pub fn load_transactions_from_reader<R>(&mut self, reader: R) -> Result<(), Error>
     where
         R: std::io::Read,
     {
         // Build a buffered CSV reader around a generic implementor of `std::io::Read`.
-        // The CSV file is NOT assumed to have headers because I want to leave the door open to that
-        // possibility, and processing the header line will fail gracefully anyway.
+        // The CSV file IS assumed to have headers.
         let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
+            .has_headers(true)
             .trim(csv::Trim::All)
             .from_reader(reader);
 
         // Now we can stream the lines into being processed as transactions
         // Because transaction ordering matters, this is done in an iterative way. Otherwise, this
         // could benefit from parallelization using the likes of `rayon`.
+        // Errors when processing lines of CSV data are expected not to stop the processing, i.e.
+        // upon encountering an error, it is simply logged but the CSV data keeps being read.
         for line in reader.deserialize::<Transaction>() {
-            let transaction = line.map_err(Error::from)?;
-            self.process_transaction(&transaction)?;
+            _ = line
+                // CSV deserialization errors are mapped into our native errors
+                .map_err(Error::from)
+                // Here we trigger the actual processing of the transaction
+                .and_then(|transaction| self.process_transaction(&transaction))
+                // Errors are inspected and logged as warnings, but never unwrapped or `?`ed.
+                .inspect_err(|err| log::warn!("{}", err));
         }
 
         Ok(())
     }
 
-    /// Performs the whole CSV file reading, decoding and processing part of this app.
+    /// Performs the whole CSV file reading, decoding and processing part of this program.
     ///
     /// Most likely called from `main()`.
     pub fn load_transactions_from_csv_file(&mut self, path: &str) -> Result<(), Error> {
         // Obtain a read handle over the CSV file
-        let read = File::open(path).map_err(Error::from)?;
+        let read = std::fs::File::open(path).map_err(Error::from)?;
         // Trigger the actual loading of the transactions from the read handle
         self.load_transactions_from_reader(read)
+    }
+
+    /// Encode and write account states (namely, account lines) into a generic writer.
+    ///
+    /// The use of generics and static dispatching here allows us to use this function both for
+    /// reading from a local file in the actual runtime, and from a data structure in tests.
+    pub fn output_accounts_into_csv_writer<W>(&self, writer: W) -> Result<(), Error>
+    where
+        W: std::io::Write,
+    {
+        // Build a buffered CSV writer around a generic implementor of `std::io::Write`.
+        // The CSV output will have headers.
+        let mut csv_writer = csv::WriterBuilder::new()
+            .has_headers(true)
+            .from_writer(writer);
+
+        // Conditional compiling is used here because:
+        // - The `HashMap` inside `AccountsSystem` is very efficient, but ordering is
+        //   indeterministic.
+        // - Tests require deterministic ordering because I want to test against known test vector
+        //   strings.
+        // - Actual runtime requires no ordering as per the specification, so it would not make
+        //   sense to have a performance penalty.
+        // As a consequence, the potentially costly ordering only happens if called from tests.
+        let account_lines = self.accounts.get_all_account_lines();
+        #[cfg(test)]
+        let account_lines = {
+            let mut account_lines_vector = account_lines.collect::<Vec<_>>();
+            account_lines_vector.sort_by_key(|line| line.client_id);
+
+            account_lines_vector.into_iter().rev()
+        };
+
+        // Now we can stream the account lines into being written into the writer.
+        // Out of caution, errors when serializing and writing DO stop the processing, i.e.
+        // upon encountering an error in one line, the writing operation is aborted.
+        for account_line in account_lines {
+            csv_writer
+                .serialize(account_line)
+                .map_err(Error::from)
+                .inspect_err(|err| log::warn!("{}", err))?;
+        }
+
+        // Writers must be flush upon completion of the writing to make sure that data goes to the
+        // output regardless of reader backpressure. Otherwise, we could exit the program
+        csv_writer.flush().map_err(Error::from)?;
+
+        Ok(())
+    }
+
+    /// Performs the actual CSV-formattin and "printing" of account data into `stdout`.
+    ///
+    /// Most likely called from `main()`.
+    pub fn output_accounts_into_stdout(&self) -> Result<(), Error> {
+        // Obtaining a writer over `stdout` is dead simple
+        let writer = std::io::stdout();
+        // Offload the heavy lifting to the generic function above
+        self.output_accounts_into_csv_writer(writer)
     }
 }

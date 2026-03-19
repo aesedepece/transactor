@@ -4,6 +4,7 @@ use crate::{
     transactions::{Transaction, TransactionType},
     types::*,
 };
+use serde::Serialize;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -15,17 +16,29 @@ mod tests;
 /// the indexed key in the context of an `AccountsSystem`.
 #[derive(Clone, Debug, Default)]
 pub struct Account {
+    /// Amount of monetary units available for spending or withdrawing
     available_balance: Value,
+    /// Amount of monetary units currently under dispute
     held_balance: Value,
+    /// Whether the account is locked (cannot be operated upon) or not
     locked: bool,
+    /// A history of past deposits and withdrawals, allowing for future recovery of the transaction
+    /// facts upon processing a dispute, resolution or chargeback.
     balance_history: BalanceHistory,
 }
 
 impl Account {
-    /// Convenience method for idiomatically checking if an account is in good state.
+    /// Convenience function for idiomatically checking if an account is in good state.
     #[inline]
     pub fn is_in_good_state(&self) -> bool {
         !self.locked
+    }
+
+    /// Computes the total balance of an account. That is, the aggregate of its available and held
+    /// balances.
+    #[inline]
+    pub fn total_balance(&self) -> Value {
+        self.available_balance + self.held_balance
     }
 
     /// Apply any type of transaction on an account, internally mutating it as expected from the
@@ -380,13 +393,23 @@ impl AccountsSystem {
     /// In practice, this is only used in tests, hence why it is guarded behind `#[cfg(test)]`.
     #[cfg(test)]
     #[inline]
-    fn get_account(&self, id: ClientId) -> Option<&Account> {
+    pub fn get_account(&self, id: ClientId) -> Option<&Account> {
         self.accounts.get(&id)
     }
 
     /// Get a mutable reference to the account entry matching a client ID.
     fn get_account_mut(&mut self, id: ClientId) -> &mut Account {
         self.accounts.entry(id).or_default()
+    }
+
+    /// Retrieve all the accounts as `AccountLine`s.
+    ///
+    /// Uses an iterator to leave up to the caller the decision on whether data should be cloned and
+    /// whatnot.
+    pub fn get_all_account_lines(&self) -> impl Iterator<Item = AccountLine> {
+        // The translation from accounts into account lines is made transparent by
+        // `impl From<(&ClientId, &Account)> for AccountLine` down below.
+        self.accounts.iter().map(From::from)
     }
 
     /// Apply a transaction on an account allegedly contained in the accounts system, internally
@@ -401,5 +424,54 @@ impl AccountsSystem {
         // set to zero, no lock, no history).
         self.get_account_mut(transaction.client_id)
             .process_transaction(transaction)
+    }
+}
+
+/// A simplified data structure that eases the serialization of account states.
+///
+/// Namely, account lines get rid of transaction history, and put the client ID in line so they can
+/// be serialized as expected.
+#[derive(Serialize)]
+pub struct AccountLine {
+    /// ID of the client that owns this account
+    #[serde(rename = "client")]
+    pub client_id: ClientId,
+    /// Amount of monetary units available for spending or withdrawing
+    #[serde(rename = "available")]
+    available_balance: Value,
+    /// Amount of monetary units currently under dispute
+    #[serde(rename = "held")]
+    held_balance: Value,
+    /// Total amount of monetary units in the account, i.e. the aggregate of available and held
+    /// balances
+    #[serde(rename = "total")]
+    total_balance: Value,
+    /// Whether the account is locked (cannot be operated upon) or not
+    locked: bool,
+}
+
+impl From<(&ClientId, &Account)> for AccountLine {
+    fn from(
+        (
+            client_id,
+            &Account {
+                available_balance,
+                held_balance,
+                locked,
+                ..
+            },
+        ): (&ClientId, &Account),
+    ) -> Self {
+        // Total balance is calculated on the spot because this is only called once. upon outputting
+        // the whole set of accounts.
+        let total_balance = held_balance + available_balance;
+
+        AccountLine {
+            client_id: *client_id,
+            available_balance,
+            held_balance,
+            total_balance,
+            locked,
+        }
     }
 }

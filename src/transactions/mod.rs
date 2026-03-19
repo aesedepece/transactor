@@ -1,10 +1,11 @@
 use crate::types::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 #[cfg(test)]
 mod tests;
 
 /// Covers the different types of transactions that we can apply on an user account.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TransactionType {
     /// A user deposited an amount of value that needs to be added to their balance.
     Deposit,
@@ -31,17 +32,20 @@ pub enum TransactionType {
 }
 
 /// The main data structure holding data for a transaction.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 pub struct Transaction {
     /// Tells how to process the transaction based on what it is representing, e.g. (deposits,
     /// withdrawals, etc.)
+    #[serde(rename = "type")]
     pub transaction_type: TransactionType,
     /// The unique ID of the client that initiated this transaction; or the client that initiated
     /// the transaction referred in `transaction_id` in the case of disputes, resolutions, and
     /// chargebacks.
+    #[serde(rename = "client")]
     pub client_id: ClientId,
     /// The unique ID of this transaction; or he unique ID of a `deposit` or `withdraw` transaction
     /// in the case of disputes, resolutions, and chargebacks.
+    #[serde(rename = "tx")]
     pub transaction_id: TransactionId,
     /// The amount of value being deposited or withdrawn.
     ///
