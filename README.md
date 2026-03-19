@@ -6,7 +6,7 @@
     <a href="https://github.com/aesedepece/transactor/actions"><img src="https://github.com/aesedepece/transactor/actions/workflows/ci.yml/badge.svg" alt="Build Status" /></a>
     <a href="https://github.com/aesedepece/transactor/graphs/contributors"><img src="https://img.shields.io/github/contributors/aesedepece/transactor.svg" alt="GitHub contributors" /></a>
     <a href="https://github.com/aesedepece/transactor/commits/master"><img src="https://img.shields.io/github/last-commit/aesedepece/transactor.svg" alt="Github last commit" /></a>
-    <a href="https://github.com/aesedepece/transactor/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aesedepece/transactor.svg" alt="GPLv3 Licensed" /></a>
+    <a href="https://github.com/aesedepece/transactor/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aesedepece/transactor" alt="GPLv3 Licensed" /></a>
 </div>
 
 ## Design Philosophy
