@@ -7,7 +7,7 @@ use crate::{
 #[cfg(test)]
 mod tests;
 
-/// The main component that conforms the runtime of this program:
+/// The main component that conforms the runtime of this application:
 /// - In its very core lays one instance of an accounts system.
 /// - Provides functions for loading and decoding transactions from CSV files, as well as for
 ///   representing and outputting the final state of the accounts in CSV format.
@@ -61,7 +61,7 @@ impl Engine {
         Ok(())
     }
 
-    /// Performs the whole CSV file reading, decoding and processing part of this program.
+    /// Performs the whole CSV file reading, decoding and processing part of this application.
     ///
     /// Most likely called from `main()`.
     pub fn load_transactions_from_csv_file(&mut self, path: &str) -> Result<(), Error> {
@@ -92,9 +92,10 @@ impl Engine {
         //   strings.
         // - Actual runtime requires no ordering as per the specification, so it would not make
         //   sense to have a performance penalty.
-        // As a consequence, the potentially costly ordering only happens if called from tests.
+        // As a consequence, the potentially costly ordering only happens if called from tests, or
+        // if the `deterministic` feature flag is set.
         let account_lines = self.accounts.get_all_account_lines();
-        #[cfg(test)]
+        #[cfg(any(test, feature = "deterministic"))]
         let account_lines = {
             let mut account_lines_vector = account_lines.collect::<Vec<_>>();
             account_lines_vector.sort_by_key(|line| line.client_id);
@@ -113,7 +114,8 @@ impl Engine {
         }
 
         // Writers must be flush upon completion of the writing to make sure that data goes to the
-        // output regardless of reader backpressure. Otherwise, we could exit the program
+        // output regardless of reader backpressure. Otherwise, we could exit the application while
+        // the writing is incomplete.
         csv_writer.flush().map_err(Error::from)?;
 
         Ok(())

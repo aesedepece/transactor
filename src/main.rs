@@ -22,8 +22,8 @@ fn main() {
     // Initialize logger before anything else.
     env_logger::init();
 
-    // Initialize the main CLI of our program. In essence, it simply tries to parses one and only
-    // one argument, which will be used as the path for a CSV file containing transactions.
+    // Initialize the main CLI of our application. In essence, it simply tries to parses one and
+    // only one argument, which will be used as the path for a CSV file containing transactions.
     let main_cli = cli::CLI::start();
 
     // Initialize the main engine that encapsulates the business logic of accounting and processing

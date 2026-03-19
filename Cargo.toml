@@ -13,8 +13,9 @@ description = "A toy (yet intentionally robust) transaction processing engine an
 # Provides the main CSV deserialization and serialization functionality.
 # Suggested by the specification.
 csv = "1.4.0"
-# Gives us fixed precision floats, which are strictly needed to guarantee 4-digit decimal precision.
-# Feature flag "serde" is needed for deserialization and serialization of these floats from and into CSVs.
+# Gives us fixed precision numbers, which are strictly needed to guarantee 4-digit decimal precision.
+# Feature flag "serde" is needed for deserialization and serialization from and into CSVs.
+# This crate was favored for the simplicity of its API, but the "rust_decimal" crate would be equally good here.
 fixed = { version = "1.30.0", features = ["serde-str"] }
 # Clever solution to having a transaction history where you can query by key and get the whole list of entries in the
 # original order of insertion, both with O(1) complexity.
@@ -28,3 +29,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 log = "0.4.29"
 # Goes hand in hand with `log`.
 env_logger = "0.11.9"
+
+[features]
+# This feature flag acts as a toggle to enforce deterministic ordering of account lines.
+deterministic = []

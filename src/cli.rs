@@ -17,8 +17,8 @@ impl CLI {
         let csv_file_path = match args.next() {
             Some(p) => p,
             None => {
-                log::error!("no input transactions CSV file path provided");
-                log::error!("usage: cargo run -- <path to transactions.csv>");
+                log::error!("No input transactions CSV file path provided");
+                log::error!("Usage: cargo run -- <path_to_transactions_csv>");
                 std::process::exit(1);
             }
         };
@@ -26,7 +26,7 @@ impl CLI {
         // The requirements namely state that the file path should be the "first and only argument",
         // so I am making sure that nothing else is found after the path
         if args.next().is_some() {
-            log::error!("unexpected extra arguments after input transactions CSV file path");
+            log::error!("Unexpected extra arguments after input transactions CSV file path");
             std::process::exit(1);
         }
 

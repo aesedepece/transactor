@@ -12,8 +12,29 @@ const SAMPLE_OUTPUT_VECTOR: &str = r#"client,available,held,total,locked
 1,1.5,0,1.5,false
 "#;
 
+const COMPLEX_INPUT_VECTOR: &str = r#"type, client, tx, amount
+deposit, 1, 1, 1234.5678
+deposit, 1, 2, 1111.1111
+withdrawal, 1, 3, 1111.1111
+resolve, 1, 2,
+dispute, 1, 2,
+resolve, 1, 2,
+dispute, 1, 2,
+dispute, 1, 3,
+dispute, 1, 3,
+resolve, 1, 3,
+resolve, 1, 3,
+dispute, 1, 3,
+chargeback, 1, 3,
+chargeback, 1, 3,
+"#;
+
+const COMPLEX_OUTPUT_VECTOR: &str = r#"client,available,held,total,locked
+1,1234.5678,1111.1111,2345.6789,true
+"#;
+
 #[test]
-fn csv_loading() {
+fn sample_csv_loading() {
     let data = SAMPLE_INPUT_VECTOR.as_bytes();
 
     // Can load transactions from CSV data
@@ -43,7 +64,7 @@ fn csv_loading() {
 }
 
 #[test]
-fn csv_outputting() {
+fn sample_csv_outputting() {
     let data = SAMPLE_INPUT_VECTOR.as_bytes();
     let mut engine = Engine::default();
     _ = engine.load_transactions_from_reader(data);
@@ -53,4 +74,17 @@ fn csv_outputting() {
     let output_str = String::from_utf8(output).unwrap();
 
     assert_eq!(output_str, SAMPLE_OUTPUT_VECTOR);
+}
+
+#[test]
+fn complex_e2e() {
+    let data = COMPLEX_INPUT_VECTOR.as_bytes();
+    let mut engine = Engine::default();
+    _ = engine.load_transactions_from_reader(data);
+
+    let mut output = Vec::new();
+    _ = engine.output_accounts_into_csv_writer(&mut output);
+    let output_str = String::from_utf8(output).unwrap();
+
+    assert_eq!(output_str, COMPLEX_OUTPUT_VECTOR);
 }

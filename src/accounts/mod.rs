@@ -48,7 +48,7 @@ impl Account {
     pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         log::trace!("Processing transaction: {:?}", transaction);
         // Before anything else, we must check that the account is in a good state, i.e. it is not
-        // locked. It is assumed that transactions cannot be processed for a locked account.
+        // locked. Transactions cannot be processed for a locked account.
         // As a consequence of controlling locked / good state here, lower-level functions like
         // `process_deposit` are not guarded against locks; but this decision is deliberate and
         // harmless because those functions are private and the only real way to mutate accounts
