@@ -4,7 +4,6 @@ use crate::{
     transactions::{Transaction, TransactionType},
     types::*,
 };
-use num::traits::Zero;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -82,7 +81,7 @@ impl Account {
         if let Some(amount) = amount {
             // Early return if amount is a negative number because... what does a negative deposit
             // even mean!?!?
-            if amount <= Value::zero() {
+            if amount <= Value::ZERO {
                 return Err(Error::ZeroOrNegativeAmount(amount));
             }
 
@@ -108,7 +107,7 @@ impl Account {
         if let Some(withdrawing) = amount {
             // Early return if amount is a negative number because... what does a negative
             // withdrawal even mean!?!?
-            if withdrawing <= Value::zero() {
+            if withdrawing <= Value::ZERO {
                 return Err(Error::ZeroOrNegativeAmount(withdrawing));
             }
 
@@ -292,6 +291,10 @@ impl Account {
     ///
     /// This operation is infallible and idempotent: unlocking will set the locked state to `false`
     /// regardless of the previous state.
+    ///
+    /// As per the scope of this PoC, unlocking is not possible in runtime, so this is implemented
+    /// only for testing purposes, hence why it is guarded behind `#[cfg(test)]`.
+    #[cfg(test)]
     #[inline]
     fn unlock(&mut self) {
         self.locked = false;

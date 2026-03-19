@@ -10,11 +10,10 @@ keywords = ["transaction", "deposit", "withdrawal", "account", "balance"]
 description = "A toy (yet intentionally robust) transaction processing engine and accounting system with support for deposits, withdrawals, disputes, resolutions and chargebacks."
 
 [dependencies]
+# Gives us fixed precision floats, which are strictly needed to guarantee 4-digit decimal precision.
+fixed = "1.30.0"
 # Clever solution to having a transaction history where you can query by key and get the whole list of entries in the
 # original order of insertion, both with O(1) complexity.
 indexmap = "2.13.0"
-# A standard in the Rust ecosystem for numeric traits such as `num::traits::Zero`, which in our case gives us a lot of
-# adaptability if type aliases need to be changed in the future.
-num = "0.4.3"
 # The gold standard for error handling and formatting these days, better in every way than the old `failure`.
 thiserror = "2.0.18"

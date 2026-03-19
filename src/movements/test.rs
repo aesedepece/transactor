@@ -7,8 +7,8 @@ fn movement_statuses() {
 
     let mut movement = Movement::new(
         MovementType::Deposit,
-        Value::from(123.456),
-        Value::from(123.456),
+        Value::from_num(123.456),
+        Value::from_num(123.456),
     );
 
     // Initial status is in force
@@ -58,8 +58,8 @@ fn movement_statuses() {
     // Transitioning from one status to the very same status is useless, so it is forbidden too
     let mut movement = Movement::new(
         MovementType::Deposit,
-        Value::from(123.456),
-        Value::from(123.456),
+        Value::from_num(123.456),
+        Value::from_num(123.456),
     );
     let statuses = [InForce, Disputed, ChargedBack];
     for status in statuses.into_iter() {
@@ -87,8 +87,8 @@ fn balance_history() {
     let first_id = TransactionId::from(1u8);
     let first_movement = Movement::new(
         MovementType::Deposit,
-        Value::from(123.456),
-        Value::from(123.456),
+        Value::from_num(123.456),
+        Value::from_num(123.456),
     );
     history.push(first_id, first_movement);
     assert!(!history.is_empty());
@@ -100,8 +100,8 @@ fn balance_history() {
     let second_id = TransactionId::from(2u8);
     let second_movement = Movement::new(
         MovementType::Deposit,
-        Value::from(123.456),
-        Value::from(123.456),
+        Value::from_num(123.456),
+        Value::from_num(123.456),
     );
     history.push(second_id, second_movement);
     assert!(!history.is_empty());
