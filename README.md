@@ -122,3 +122,7 @@ A must for proper logging of runtime errors.
 
 ### `env_logger`
 Goes hand in hand with `log`.
+
+## Deep Dive
+
+For an in-depth and always up-to-date deep dive into the inner workings of this repository, you can visit its [Docs.rs](https://docs.rs/crate/transactor/latest) and [DeepWiki](https://deepwiki.com/aesedepece/transactor/) pages.
