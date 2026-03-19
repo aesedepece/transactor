@@ -1,6 +1,6 @@
 [package]
 name = "transactor"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Adan SdPC <adan@witnet.foundation>"]
 repository = "https://github.com/aesedepece/transactor"

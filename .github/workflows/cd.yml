@@ -5,6 +5,11 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   publish:
     name: Publish
@@ -40,6 +45,24 @@ jobs:
           body: "Automated release for version ${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Documentation
+        run: cargo doc --no-deps --all-features
+
+      - name: Fix Pathing for GitHub Pages
+        run: echo '<meta http-equiv="refresh" content="0; url=transactor/index.html">' > target/doc/index.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'target/doc'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Cargo Publish
         run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty
