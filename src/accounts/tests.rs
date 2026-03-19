@@ -1,4 +1,4 @@
-use crate::{accounts::Account, errors::Error, types::*};
+use crate::{accounts::Account, errors::Error, transactions::Transaction, types::*};
 use num::traits::Zero;
 use std::ops::Mul;
 
@@ -39,7 +39,7 @@ fn account_locking() {
 }
 
 #[test]
-fn processing_deposits() {
+fn processing_deposit_facts() {
     let mut account = Account::default();
 
     // An unlocked account can process a deposit with a positive amount, and the available balance
@@ -76,7 +76,7 @@ fn processing_deposits() {
 }
 
 #[test]
-fn processing_withdrawals() {
+fn processing_withdrawal_facts() {
     let initial_amount = Value::from(1_000.0);
     let mut account = Account {
         available_balance: initial_amount,
@@ -131,9 +131,30 @@ fn processing_withdrawals() {
 
     // Please note that withdrawals on locked accounts are not tested here because account locks
     // operate on a higher level.
-    // Those are tested separately for the function `process_transaction()`.
+    // Those are tested down below at `processing_withdrawal_transactions()`.
     // For more color on why this is just fine, please check the comments in the body of function
     // `process_transaction()`.
     // Movement derivation is not tested here for a similar reason: it only happens at a higher
     // level where the system is aware of transactions and transaction IDs.
+}
+
+#[test]
+fn processing_deposit_transactions() {
+    use crate::transactions::TransactionType::*;
+
+    let mut account = Account::default();
+
+    // An unlocked account can process a deposit with a positive amount, and the available balance
+    // gets incremented accordingly
+    let client_id = ClientId::from(1u8);
+    let transaction_id = TransactionId::from(1u8);
+    let deposit_amount = Value::from(123.456);
+    let deposit = Transaction {
+        transaction_type: Deposit,
+        client_id,
+        transaction_id,
+        amount: Some(deposit_amount),
+    };
+    _ = account.process_transaction(&deposit);
+    assert_eq!(account.available_balance, deposit_amount);
 }

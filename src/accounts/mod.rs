@@ -1,6 +1,6 @@
 use crate::{
     errors::Error,
-    movements::{BalanceHistory, Movement, MovementType},
+    movements::{BalanceHistory, Movement, MovementStatus, MovementType},
     transactions::{Transaction, TransactionType},
     types::*,
 };
@@ -43,12 +43,21 @@ impl Account {
         if self.is_in_good_state() {
             let tx = transaction;
 
+            // Beyond any balance changes or any other changes to the account state, processing a
+            // deposit or a withdrawal is expected to also return a movement that will later be
+            // pushed into the account's balance history.
             let result = match tx.transaction_type {
                 TransactionType::Deposit => self.deposit(tx.amount).map(Some),
                 TransactionType::Withdrawal => self.withdraw(tx.amount).map(Some),
-                TransactionType::Dispute => Ok(None),
-                TransactionType::Resolve => Ok(None),
-                TransactionType::Chargeback => Ok(None),
+                TransactionType::Dispute => {
+                    self.dispute(tx.client_id, tx.transaction_id).map(|_| None)
+                }
+                TransactionType::Resolve => {
+                    self.resolve(tx.client_id, tx.transaction_id).map(|_| None)
+                }
+                TransactionType::Chargeback => self
+                    .charge_back(tx.client_id, tx.transaction_id)
+                    .map(|_| None),
             };
 
             // If processing the transaction resulted in the creation of a new movement (it was
@@ -67,6 +76,8 @@ impl Account {
     /// Process a deposit.
     ///
     /// Simply adds an amount of monetary value into the available balance of the account.
+    ///
+    /// Returns a new movement entry derived from the deposit facts and the former account balances.
     fn deposit(&mut self, amount: Option<Value>) -> Result<Movement, Error> {
         if let Some(amount) = amount {
             // Early return if amount is a negative number because... what does a negative deposit
@@ -90,6 +101,9 @@ impl Account {
     /// Process a withdrawal.
     ///
     /// Simply removes an amount of monetary value from the available balance of the account.
+    ///
+    /// Returns a new movement entry derived from the withdrawal facts and the former account
+    /// balances.
     fn withdraw(&mut self, amount: Option<Value>) -> Result<Movement, Error> {
         if let Some(withdrawing) = amount {
             // Early return if amount is a negative number because... what does a negative
@@ -123,6 +137,144 @@ impl Account {
         }
     }
 
+    /// Process a dispute claim.
+    ///
+    /// Simply searches for an existing movement matching the transaction ID, tries to update its
+    /// status from `InForce` into `Disputed`, and moves the corresponding amount into the held
+    /// balance.
+    fn dispute(&mut self, client_id: ClientId, transaction_id: TransactionId) -> Result<(), Error> {
+        // Scoping is used here to prevent double-borrowing of self, leveraging the fact that
+        // `Value` is `Copy` and hence can safely scape the scope through implicit returning.
+        let (movement_type, movement_amount) = {
+            // Try to find the movement referred by the transaction ID from the dispute claim
+            let movement = self.balance_history.get_mut(&transaction_id).ok_or(
+                Error::DisputingUnknownTransaction {
+                    transaction: transaction_id,
+                    client: client_id,
+                },
+            )?;
+
+            // Trigger the status change on the original movement referred by the dispute claim
+            movement.update_status(MovementStatus::Disputed)?;
+
+            (movement.movement_type, movement.amount)
+        };
+
+        // All good, now let's put the balance on hold:
+        // - If the disputed transaction was a deposit, we need to transfer from the available
+        //   balance into the held balance.
+        // - If the transaction was a withdrawal, the held balance increases, seemingly out of
+        //   nowhere.
+        // This last point apparently contradicts the requirement that total balance should remain
+        // unchanged upon disputing, but there is simply no other way if we want to allow disputing
+        // withdrawals: if by definition a withdrawal "destroys" balance (reduces the total amount
+        // of balance that exists at a system level), then reverting a withdrawal must create
+        // balance out of thin air, just like deposits do.
+        match movement_type {
+            MovementType::Deposit => {
+                self.transfer_from_available_to_held(movement_amount)?;
+            }
+            MovementType::Withdrawal => {
+                self.held_balance += movement_amount;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Process the resolution of a former dispute.
+    ///
+    /// Simply searches for an existing movement matching the transaction ID, and tries to update
+    /// its status from `Disputed` into `InForce`, and reverts the dispute (honors the original
+    /// transaction).
+    fn resolve(&mut self, client_id: ClientId, transaction_id: TransactionId) -> Result<(), Error> {
+        // Scoping is used here to prevent double-borrowing of self, leveraging the fact that
+        // `MovementType` and `Value` are `Copy` and hence can safely scape the scope through
+        // implicit returning.
+        let (movement_type, movement_amount) = {
+            // Try to find the movement referred by the transaction ID from the resolution
+            let movement = self.balance_history.get_mut(&transaction_id).ok_or(
+                Error::ResolvingUnknownTransaction {
+                    transaction: transaction_id,
+                    client: client_id,
+                },
+            )?;
+
+            // Trigger the status change on the original movement referred by the resolution
+            movement.update_status(MovementStatus::InForce)?;
+
+            (movement.movement_type, movement.amount)
+        };
+
+        // All good, move the balances around so the account balances are reverted to how they were
+        // before the dispute:
+        // - If the disputed (and now resolved) transaction was a deposit, we honor it by means of
+        //   releasing the held balance back into the available balance.
+        // - If the transaction was a withdrawal, we honor it by actually removing the withdrawn
+        //   balance from the held balance.
+        match movement_type {
+            MovementType::Deposit => {
+                self.transfer_from_held_to_available(movement_amount);
+            }
+            MovementType::Withdrawal => {
+                self.held_balance -= movement_amount;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Process the chargeback of a former dispute.
+    ///
+    /// Simply searches for an existing movement matching the transaction ID, tries to update
+    /// its status from `Disputed` into `ChargedBack`, and executes the dispute (reverts the
+    /// original transaction).
+    ///
+    /// Additionally, it locks the account.
+    fn charge_back(
+        &mut self,
+        client_id: ClientId,
+        transaction_id: TransactionId,
+    ) -> Result<(), Error> {
+        // Scoping is used here to prevent double-borrowing of self, leveraging the fact that
+        // `MovementType` and `Value` are `Copy` and hence can safely scape the scope through
+        // implicit returning.
+        let (movement_type, movement_amount) = {
+            // Try to find the movement referred by the transaction ID from the resolution
+            let movement = self.balance_history.get_mut(&transaction_id).ok_or(
+                Error::ChargingBackUnknownTransaction {
+                    transaction: transaction_id,
+                    client: client_id,
+                },
+            )?;
+
+            // Trigger the status change on the original movement referred by the resolution
+            movement.update_status(MovementStatus::ChargedBack)?;
+
+            (movement.movement_type, movement.amount)
+        };
+
+        // All good, move the balances around so the account balances are reverted to how they were
+        // before the original transaction:
+        // - If the disputed (and now charged back) transaction was a deposit, we revert it by means
+        //   of removing its amount from the held balance.
+        // - If the transaction was a withdrawal, we revert it by actually crediting the withdrawn
+        //   balance into the available balance (transferring from held to available).
+        match movement_type {
+            MovementType::Deposit => {
+                self.held_balance -= movement_amount;
+            }
+            MovementType::Withdrawal => {
+                self.transfer_from_held_to_available(movement_amount);
+            }
+        }
+
+        // Finally, lock the account.
+        self.lock();
+
+        Ok(())
+    }
+
     /// Flag an account as locked.
     ///
     /// All further transactions affecting this account will be rejected until unlocked.
@@ -130,7 +282,7 @@ impl Account {
     /// This operation is infallible and idempotent: locking will set the locked state to `true`
     /// regardless of the previous state.
     #[inline]
-    pub fn lock(&mut self) {
+    fn lock(&mut self) {
         self.locked = true;
     }
 
@@ -141,8 +293,68 @@ impl Account {
     /// This operation is infallible and idempotent: unlocking will set the locked state to `false`
     /// regardless of the previous state.
     #[inline]
-    pub fn unlock(&mut self) {
+    fn unlock(&mut self) {
         self.locked = false;
+    }
+
+    /// Move the specified amount of monetary value from the available balance into the held
+    /// balance.
+    ///
+    /// This balance change is only expected to happen upon disputing a deposit.
+    ///
+    /// *Note*: trying to put on hold more balance that the current available balance will fail.
+    /// Please read the comments in the source code for the rationale.
+    // The requirements do not specify how to handle the situation in which a deposit is disputed,
+    // but the monetary value that it brought was spent ever since, leasing to an available balance
+    // that is lower than the amount that we want to put on hold.
+    //
+    // As a consequence, a business decision needs to be made here, where the two apparent ways of
+    // approaching this situation are:
+    //
+    // 1. Capping the amount to be put on hold to the current available balance, i.e. if we try to
+    //    put 50 units of monetary value on hold, but our available balance is only 30 units, the
+    //    available balance becomes 0 and the held balance becomes 30;
+    // 2. Allow balances to go negative, i.e. if we try to put 50 units of monetary value on hold,
+    //    but our available balance is only 30 units, the available balance becomes -20 and the held
+    //    balance becomes 50;
+    // 3. Throw an error and refuse to process the dispute, while balances remain unchanged.
+    //
+    // It is an explicit requirement that upon putting balance on hold, the total balance (the
+    // aggregate of available balance and held balance) should not change. In order to explicitly
+    // honor this requirement, the approach numbered "1)" above is discarded.
+    //
+    // However, the requirements namely state that in case of doubt, assumptions must be made such
+    // that they make sense for an ATM or a bank. Therefore, I deem adequate to take the most
+    // conservative and "pesimistic" approach, which will provide the guarantees that better
+    // adequate to ACID principles. That is, of course, the approach numbered 3).
+    fn transfer_from_available_to_held(&mut self, amount: Value) -> Result<(), Error> {
+        // Early return if hitting the undefined behavior described above
+        if amount > self.available_balance {
+            return Err(Error::DisputeAmountExceedsAvailableBalance {
+                disputing: amount,
+                available: self.available_balance,
+            });
+        }
+
+        // All good, we can perform the transfer
+        self.available_balance -= amount;
+        self.held_balance += amount;
+
+        Ok(())
+    }
+
+    /// Move the specified amount of monetary value from the held balance into the available
+    /// balance.
+    ///
+    /// This balance change is only expected to happen upon resolving a disputed withdrawal.
+    ///
+    /// *Note*: this does not suffer from the unspecified behavior affecting the opposite
+    /// `transfer_from_available_to_held()` function, because held balance can only come from
+    /// successfully disputing a former deposit or withdrawal. In other words, this function should
+    /// be infallible in practice.
+    fn transfer_from_held_to_available(&mut self, amount: Value) {
+        self.held_balance -= amount;
+        self.available_balance += amount;
     }
 }
 

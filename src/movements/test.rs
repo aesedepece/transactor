@@ -55,7 +55,7 @@ fn movement_statuses() {
     );
     assert_eq!(movement.status, ChargedBack);
 
-    // Transitioning from one status to the very same status is always legal
+    // Transitioning from one status to the very same status is useless, so it is forbidden too
     let mut movement = Movement::new(
         MovementType::Deposit,
         Value::from(123.456),
@@ -63,7 +63,14 @@ fn movement_statuses() {
     );
     let statuses = [InForce, Disputed, ChargedBack];
     for status in statuses.into_iter() {
-        assert_eq!(movement.update_status(status), Ok(()));
+        _ = movement.update_status(status);
+        assert_eq!(
+            movement.update_status(status),
+            Err(IllegalMovementStatusTransition {
+                from: status,
+                to: status
+            })
+        );
         assert_eq!(movement.status, status)
     }
 }
@@ -77,7 +84,7 @@ fn balance_history() {
     assert_eq!(history.len(), 0);
 
     // Once an element is pushed, it can be found in the history and queried by ID
-    let first_id = TransactionId::from(1u16);
+    let first_id = TransactionId::from(1u8);
     let first_movement = Movement::new(
         MovementType::Deposit,
         Value::from(123.456),
@@ -90,7 +97,7 @@ fn balance_history() {
     assert_eq!(history.get(&first_id), Some(&first_movement));
 
     // Further elements can be pushed, found in the history and queried by ID
-    let second_id = TransactionId::from(2u16);
+    let second_id = TransactionId::from(2u8);
     let second_movement = Movement::new(
         MovementType::Deposit,
         Value::from(123.456),

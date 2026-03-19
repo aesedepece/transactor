@@ -33,9 +33,9 @@ pub enum MovementStatus {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Movement {
     /// Which type of movement is this.
-    movement_type: MovementType,
+    pub movement_type: MovementType,
     /// The amount of monetary value that the movement is depositing or withdrawing.
-    amount: Value,
+    pub amount: Value,
     /// The final available balance after this movement is applied.
     available_balance_after: Value,
     /// The current status of this movement.
@@ -62,26 +62,23 @@ impl Movement {
         use MovementStatus::*;
         let from_status = self.status;
 
+        // When defining this type of state machines, there is always the choice to go for an
+        // "optimistic" or "pessimistic" approach:
+        // - Optimistic: forbid specific transitions, allow everything that is not forbidden.
+        // - Pessimistic: allow specific transitions, forbid everything that is not allowed.
+        // In this case, the requirements namely state that in case of doubt, assumptions must be
+        // made such that they make sense for an ATM or a bank. Therefore, I deem adequate to take
+        // the most conservative and "pesimistic" approach, which will provide the guarantees that
+        // better adequate to ACID principles.
         match (from_status, new_status) {
-            // Changing from one status to the same status is always legal, but does nothing!
-            (x, y) if x == y => {
-              Ok(())
-            },
-            // Movements that are in force cannot be charged back without being disputed first
-            (InForce, ChargedBack)
-            // Movements that are charged back cannot change status anymore
-            | (ChargedBack, _) => {
-                Err(Error::IllegalMovementStatusTransition {
-                    from: from_status,
-                    to: new_status
-                })
-            },
-            // All other transitions are legal and trigger an actual mutation
-            (_, new_status) => {
+            // There only exist 3 "legal" transitions
+            (InForce, Disputed) | (Disputed, ChargedBack) | (Disputed, InForce) => {
                 self.status = new_status;
 
                 Ok(())
             }
+            // Every other transition that has not been explicitly allowed is forbidden
+            (from, to) => Err(Error::IllegalMovementStatusTransition { from, to }),
         }
     }
 }
@@ -127,10 +124,17 @@ impl BalanceHistory {
         self.history.insert(id, movement);
     }
 
-    /// Obtains a reference to an existing movement that is already present in the history, as
-    /// identified by its transaction ID.
+    /// Obtains an immutable reference to an existing movement that is already present in the
+    /// history, as identified by its transaction ID.
     #[inline]
     pub fn get(&self, id: &TransactionId) -> Option<&Movement> {
         self.history.get(id)
+    }
+
+    /// Obtains a mutable reference to an existing movement that is already present in the history,
+    /// as identified by its transaction ID.
+    #[inline]
+    pub fn get_mut(&mut self, id: &TransactionId) -> Option<&mut Movement> {
+        self.history.get_mut(id)
     }
 }
