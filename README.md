@@ -10,13 +10,11 @@
 </div>
 
 ## Design Philosophy
-
 * **Streaming I/O:** Designed to handle files larger than available RAM. It processes transactions row-by-row using buffered readers, maintaining a compact memory footprint.
 * **Dependency Austerity:** Dependencies are kept as minimal as possible in order to avoid bloating the project and potential security risks.
 * **Error Safety:** All business logic errors and I/O failures are logged into `stderr` with configurable log levels, ensuring `stdout` remains a clean data stream for downstream pipes or file redirection.
 
 ## Usage
-
 The application accepts a single argument: the path to the input CSV file.
 
 ```bash
@@ -26,13 +24,11 @@ cargo run -- transactions.csv > accounts.csv
 As per the requirements, adding any extra arguments will make the application fail.
 
 ## Command Line Interface
-
 | Argument                   | Type | Description                                           |
 |:---------------------------| :--- | :---------------------------------------------------- |
 | `path_to_transactions_csv` | Path | The path to the CSV file containing transaction data. |
 
 ### Logging
-
 Logging of errors and diagnostics are handled via the `log` crate abstraction.
 
 To view processing details or debug information without corrupting the CSV output, use the `RUST_LOG` environment variable:
@@ -46,7 +42,6 @@ RUST_LOG=trace cargo run -- transactions.csv > accounts.csv
 ```
 
 ## Assumptions
-
 These are some assumptions that were made on unclear requirements or behaviors that are not clearly defined in the specification:
 - Only deposits and withdrawal transactions can be disputed, resolved and charged back.
 - Disputing a withdrawal transaction must actually violate the "total funds should remain the same" principle.
@@ -55,7 +50,6 @@ These are some assumptions that were made on unclear requirements or behaviors t
 - Input CSV files always contain headers (the first line in a file will be skipped when reading transactions).
 
 ## Technical Decisions
-
 Note: additional rationale on specific design decisions and code style choices can be found inline in affected modules.
 
 ### Precision & Arithmetic
@@ -84,7 +78,6 @@ To ensure financial integrity, the state machine only allows 3 legal transitions
 Any other transitions are strictly forbidden.
 
 ## Testing
-
 The suite includes unit tests for core logic and integration tests for CSV streaming.
 
 ```bash
@@ -124,5 +117,7 @@ A must for proper logging of runtime errors.
 Goes hand in hand with `log`.
 
 ## Deep Dive
-
-For an in-depth and always up-to-date deep dive into the inner workings of this repository, you can visit its [Docs.rs](https://docs.rs/crate/transactor/latest) and [DeepWiki](https://deepwiki.com/aesedepece/transactor/) pages.
+For a more in-depth and always up-to-date deep dive into the inner workings of this repository, you can visit:
+- [Official documentation site](https://aesedepece.github.io/transactor)
+- [DeepWiki](https://deepwiki.com/aesedepece/transactor/)
+- [Docs.rs](https://docs.rs/crate/transactor/latest)
