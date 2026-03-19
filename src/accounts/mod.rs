@@ -369,6 +369,7 @@ impl Account {
 // dropped. A decision was made to keep them in place for the sake of traceability and the
 // ability to dispute a "total withdrawal" (when the user withdraws the totality of their balance,
 // leaving zero value behind).
+#[derive(Default)]
 pub struct AccountsSystem {
     accounts: HashMap<ClientId, Account>,
 }

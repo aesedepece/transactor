@@ -1,5 +1,10 @@
-use crate::movements::MovementStatus::{ChargedBack, Disputed, InForce};
-use crate::{accounts::Account, errors::Error, transactions::Transaction, types::*};
+use crate::{
+    accounts::{Account, AccountsSystem},
+    errors::Error,
+    movements::MovementStatus::*,
+    transactions::Transaction,
+    types::*,
+};
 use std::ops::Mul;
 
 #[test]
@@ -135,6 +140,7 @@ fn processing_transactions_on_account() {
     use crate::transactions::TransactionType::*;
 
     let mut account = Account::default();
+    let client_id = ClientId::default();
 
     // An unlocked account can process a deposit with a positive amount, and the available balance
     // gets incremented accordingly
@@ -142,7 +148,7 @@ fn processing_transactions_on_account() {
     let first_deposit_amount = Value::from_num(123.456);
     let first_deposit = Transaction {
         transaction_type: Deposit,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_deposit_tx_id,
         amount: Some(first_deposit_amount),
     };
@@ -153,7 +159,7 @@ fn processing_transactions_on_account() {
     // A deposit cannot be resolved before being disputed first
     let resolve = Transaction {
         transaction_type: Resolve,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_deposit_tx_id,
         amount: None,
     };
@@ -170,7 +176,7 @@ fn processing_transactions_on_account() {
     // A deposit cannot be charged back before being disputed first
     let chargeback = Transaction {
         transaction_type: Chargeback,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_deposit_tx_id,
         amount: None,
     };
@@ -190,7 +196,7 @@ fn processing_transactions_on_account() {
     let first_withdrawal_amount = Value::from_num(100.0);
     let first_withdrawal = Transaction {
         transaction_type: Withdrawal,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: Some(first_withdrawal_amount),
     };
@@ -207,7 +213,7 @@ fn processing_transactions_on_account() {
     // A withdrawal cannot be charged back before being disputed first
     let chargeback = Transaction {
         transaction_type: Chargeback,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: None,
     };
@@ -227,7 +233,7 @@ fn processing_transactions_on_account() {
     // A deposit cannot be disputed after the monetary value it brought has been withdrawn
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_deposit_tx_id,
         amount: None,
     };
@@ -248,7 +254,7 @@ fn processing_transactions_on_account() {
     // should change accordingly (originally withdrawn amount appears as "held")
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: None,
     };
@@ -263,7 +269,7 @@ fn processing_transactions_on_account() {
     // should change accordingly (the withdrawal is applied, and the held balance disappears)
     let resolve = Transaction {
         transaction_type: Resolve,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: None,
     };
@@ -280,7 +286,7 @@ fn processing_transactions_on_account() {
     let second_deposit_amount = Value::from_num(12345.6789);
     let second_deposit = Transaction {
         transaction_type: Deposit,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: Some(second_deposit_amount),
     };
@@ -295,7 +301,7 @@ fn processing_transactions_on_account() {
     assert_eq!(account.held_balance, Value::ZERO);
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -310,7 +316,7 @@ fn processing_transactions_on_account() {
     // should change accordingly (the deposit is applied, and the held balance disappears)
     let resolve = Transaction {
         transaction_type: Resolve,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -325,7 +331,7 @@ fn processing_transactions_on_account() {
     // should change accordingly (the deposit is reverted, and the held balance disappears)
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -337,7 +343,7 @@ fn processing_transactions_on_account() {
     assert_eq!(account.held_balance, second_deposit_amount);
     let chargeback = Transaction {
         transaction_type: Chargeback,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -352,7 +358,7 @@ fn processing_transactions_on_account() {
     // but also because the account will be locked
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -365,7 +371,7 @@ fn processing_transactions_on_account() {
     // but also because the account will be locked
     let resolve = Transaction {
         transaction_type: Resolve,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -378,7 +384,7 @@ fn processing_transactions_on_account() {
     // transition
     let chargeback = Transaction {
         transaction_type: Resolve,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_deposit_tx_id,
         amount: None,
     };
@@ -392,7 +398,7 @@ fn processing_transactions_on_account() {
     let third_deposit_amount = Value::from_num(0.1234567);
     let third_deposit = Transaction {
         transaction_type: Deposit,
-        client_id: Default::default(),
+        client_id,
         transaction_id: third_deposit_tx_id,
         amount: Some(third_deposit_amount),
     };
@@ -406,7 +412,7 @@ fn processing_transactions_on_account() {
     let second_withdrawal_amount = Value::from_num(0.1234567);
     let second_withdrawal = Transaction {
         transaction_type: Withdrawal,
-        client_id: Default::default(),
+        client_id,
         transaction_id: second_withdrawal_tx_id,
         amount: Some(second_withdrawal_amount),
     };
@@ -424,7 +430,7 @@ fn processing_transactions_on_account() {
     // back to the available balance)
     let dispute = Transaction {
         transaction_type: Dispute,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: None,
     };
@@ -436,11 +442,389 @@ fn processing_transactions_on_account() {
     assert_eq!(account.held_balance, first_withdrawal_amount);
     let chargeback = Transaction {
         transaction_type: Chargeback,
-        client_id: Default::default(),
+        client_id,
         transaction_id: first_withdrawal_tx_id,
         amount: None,
     };
     assert!(matches!(account.process_transaction(&chargeback), Ok(_)));
     assert_eq!(account.available_balance, first_deposit_amount);
     assert_eq!(account.held_balance, Value::ZERO);
+}
+
+#[test]
+fn processing_transactions_on_accounts_system() {
+    use crate::transactions::TransactionType::*;
+
+    let mut accounts = AccountsSystem::default();
+    let client_id = ClientId::default();
+
+    // An unlocked account can process a deposit with a positive amount, and the available balance
+    // gets incremented accordingly
+    let first_deposit_tx_id = TransactionId::from(1u8);
+    let first_deposit_amount = Value::from_num(123.456);
+    let first_deposit = Transaction {
+        transaction_type: Deposit,
+        client_id,
+        transaction_id: first_deposit_tx_id,
+        amount: Some(first_deposit_amount),
+    };
+    assert!(matches!(
+        accounts.process_transaction(&first_deposit),
+        Ok(_)
+    ));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // A deposit cannot be resolved before being disputed first
+    let resolve = Transaction {
+        transaction_type: Resolve,
+        client_id,
+        transaction_id: first_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&resolve).unwrap_err(),
+        Error::IllegalMovementStatusTransition {
+            from: InForce,
+            to: InForce,
+        }
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // A deposit cannot be charged back before being disputed first
+    let chargeback = Transaction {
+        transaction_type: Chargeback,
+        client_id,
+        transaction_id: first_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&chargeback).unwrap_err(),
+        Error::IllegalMovementStatusTransition {
+            from: InForce,
+            to: ChargedBack,
+        }
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // An unlocked account can process a withdrawal with a positive amount, and the available
+    // balance gets decremented accordingly
+    let first_withdrawal_tx_id = TransactionId::from(2u8);
+    let first_withdrawal_amount = Value::from_num(100.0);
+    let first_withdrawal = Transaction {
+        transaction_type: Withdrawal,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: Some(first_withdrawal_amount),
+    };
+    assert!(matches!(
+        accounts.process_transaction(&first_withdrawal),
+        Ok(_)
+    ));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // A withdrawal cannot be charged back before being disputed first
+    let chargeback = Transaction {
+        transaction_type: Chargeback,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&chargeback).unwrap_err(),
+        Error::IllegalMovementStatusTransition {
+            from: InForce,
+            to: ChargedBack,
+        }
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // A deposit cannot be disputed after the monetary value it brought has been withdrawn
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: first_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&dispute).unwrap_err(),
+        Error::DisputeAmountExceedsAvailableBalance {
+            disputing: first_deposit_amount,
+            available: first_deposit_amount - first_withdrawal_amount,
+        }
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // An unlocked account can process a dispute on a withdrawal transaction, and the balances
+    // should change accordingly (originally withdrawn amount appears as "held")
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&dispute), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        first_withdrawal_amount
+    );
+
+    // An unlocked account can resolve a dispute on a withdrawal transaction, and the balances
+    // should change accordingly (the withdrawal is applied, and the held balance disappears)
+    let resolve = Transaction {
+        transaction_type: Resolve,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&resolve), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // An unlocked account can process a dispute on a deposit transaction, and the balances
+    // should change accordingly (available balance becomes "held")
+    let second_deposit_tx_id = TransactionId::from(3u8);
+    let second_deposit_amount = Value::from_num(12345.6789);
+    let second_deposit = Transaction {
+        transaction_type: Deposit,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: Some(second_deposit_amount),
+    };
+    assert!(matches!(
+        accounts.process_transaction(&second_deposit),
+        Ok(_)
+    ));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount + second_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&dispute), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        second_deposit_amount
+    );
+
+    // An unlocked account can resolve a dispute on a deposit transaction, and the balances
+    // should change accordingly (the deposit is applied, and the held balance disappears)
+    let resolve = Transaction {
+        transaction_type: Resolve,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&resolve), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount + second_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // An unlocked account can charge back a dispute on a deposit transaction, and the balances
+    // should change accordingly (the deposit is reverted, and the held balance disappears)
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&dispute), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        second_deposit_amount
+    );
+    let chargeback = Transaction {
+        transaction_type: Chargeback,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&chargeback), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
+
+    // A charged back transaction cannot be disputed, not only because it is an illegal transition
+    // but also because the account will be locked
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&dispute).unwrap_err(),
+        Error::LockedAccount,
+    );
+
+    // A charged back transaction cannot be resolved, not only because it is an illegal transition
+    // but also because the account will be locked
+    let resolve = Transaction {
+        transaction_type: Resolve,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&resolve).unwrap_err(),
+        Error::LockedAccount,
+    );
+
+    // A charged back transaction cannot be charged back again, not only because it is an illegal
+    // transition
+    let chargeback = Transaction {
+        transaction_type: Resolve,
+        client_id,
+        transaction_id: second_deposit_tx_id,
+        amount: None,
+    };
+    assert_eq!(
+        accounts.process_transaction(&chargeback).unwrap_err(),
+        Error::LockedAccount,
+    );
+
+    // A locked account admits no further deposits
+    let third_deposit_tx_id = TransactionId::from(4u8);
+    let third_deposit_amount = Value::from_num(0.1234567);
+    let third_deposit = Transaction {
+        transaction_type: Deposit,
+        client_id,
+        transaction_id: third_deposit_tx_id,
+        amount: Some(third_deposit_amount),
+    };
+    assert_eq!(
+        accounts.process_transaction(&third_deposit).unwrap_err(),
+        Error::LockedAccount,
+    );
+
+    // A locked account admits no further withdrawals
+    let second_withdrawal_tx_id = TransactionId::from(4u8);
+    let second_withdrawal_amount = Value::from_num(0.1234567);
+    let second_withdrawal = Transaction {
+        transaction_type: Withdrawal,
+        client_id,
+        transaction_id: second_withdrawal_tx_id,
+        amount: Some(second_withdrawal_amount),
+    };
+    assert_eq!(
+        accounts
+            .process_transaction(&second_withdrawal)
+            .unwrap_err(),
+        Error::LockedAccount,
+    );
+
+    // Let's unlock the account just for the sake of one last chargeback test.
+    // This will be our little secret... 🙊
+    accounts.get_account_mut(client_id).unlock();
+
+    // An unlocked account can charge back a dispute on a withdrawal transaction, and the balances
+    // should change accordingly (the withdrawal is reverted, and the held balance is transferred
+    // back to the available balance)
+    let dispute = Transaction {
+        transaction_type: Dispute,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&dispute), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount - first_withdrawal_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        first_withdrawal_amount
+    );
+    let chargeback = Transaction {
+        transaction_type: Chargeback,
+        client_id,
+        transaction_id: first_withdrawal_tx_id,
+        amount: None,
+    };
+    assert!(matches!(accounts.process_transaction(&chargeback), Ok(_)));
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().available_balance,
+        first_deposit_amount
+    );
+    assert_eq!(
+        accounts.get_account(client_id).unwrap().held_balance,
+        Value::ZERO
+    );
 }
