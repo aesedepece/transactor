@@ -14,9 +14,7 @@ fn main() {
     let reader = BufReader::new(stdin);
 
     // Let the engine process everything from the stdin reader
-    if let Err(err) = engine.load_transactions_from_reader(reader) {
-        log::error!("{}", err)
-    }
+    engine.load_transactions_from_reader(reader);
 
     // Upon EOF (or manually, Ctrl+D) write the final account status into stdout
     if let Err(err) = engine.output_accounts_into_stdout() {

@@ -38,10 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let result = tokio::task::spawn_blocking(move || {
                         // Lock the mutex to get exclusive mutable access to the engine
                         let mut locked_engine = engine_clone.lock().unwrap();
-
-                        if let Err(e) = locked_engine.load_transactions_from_reader(std_stream) {
-                            log::error!("Engine error for {}: {}", addr, e);
-                        }
+                        locked_engine.load_transactions_from_reader(std_stream);
                     }).await;
 
                     if result.is_err() { log::error!("Task panicked while processing {}", addr); }

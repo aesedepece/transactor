@@ -45,6 +45,10 @@ impl Account {
     /// semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
+    ///
+    /// # Errors
+    /// Can fail if the account is locked, or if any other circumstance related to the account
+    /// or the transaction makes it impossible to process it.
     pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         log::trace!("Processing transaction: {:?}", transaction);
         // Before anything else, we must check that the account is in a good state, i.e. it is not
@@ -417,6 +421,10 @@ impl AccountsSystem {
     /// mutating it as expected from the semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
+    ///
+    /// # Errors
+    /// Can fail if the account is locked, or if any other circumstance related to the account
+    /// or the transaction makes it impossible to process it.
     pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         // The entry API makes it convenient, efficient and safe to "upsert" account entries into
         // our system, i.e. creating the entry if it does not exist before even trying to process

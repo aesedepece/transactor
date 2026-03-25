@@ -23,6 +23,10 @@ impl Engine {
     /// mutating it as expected from the semantics of the transaction type.
     ///
     /// Upon success, returns the final state of the account, i.e. how it looks like after mutation.
+    ///
+    /// # Errors
+    /// Can fail if the account is locked, or if any other circumstance related to the account
+    /// or the transaction makes it impossible to process it.
     pub fn process_transaction(&mut self, transaction: &Transaction) -> Result<&Account, Error> {
         self.accounts.process_transaction(transaction)
     }
@@ -32,7 +36,10 @@ impl Engine {
     ///
     /// The use of generics and static dispatching here allows us to use this function both for
     /// reading from a local file in the actual runtime, and from a data structure in tests.
-    pub fn load_transactions_from_reader<R>(&mut self, reader: R) -> Result<(), Error>
+    ///
+    /// Because of its best-effort approach and error forgiveness, this function is infallible in
+    /// practice.
+    pub fn load_transactions_from_reader<R>(&mut self, reader: R)
     where
         R: std::io::Read,
     {
@@ -57,24 +64,31 @@ impl Engine {
                 // Errors are inspected and logged as warnings, but never unwrapped or `?`ed.
                 .inspect_err(|err| log::warn!("{}", err));
         }
-
-        Ok(())
     }
 
     /// Performs the whole CSV file reading, decoding and processing part of this application.
     ///
     /// Most likely called from `main()`.
+    ///
+    /// # Errors
+    /// Can fail if the file does not exist, it cannot be opened, or memory allocation fails for the
+    /// internal buffer.
     pub fn load_transactions_from_csv_file(&mut self, path: &str) -> Result<(), Error> {
         // Obtain a read handle over the CSV file
         let read = std::fs::File::open(path).map_err(Error::from)?;
         // Trigger the actual loading of the transactions from the read handle
-        self.load_transactions_from_reader(read)
+        self.load_transactions_from_reader(read);
+
+        Ok(())
     }
 
     /// Encode and write account states (namely, account lines) into a generic writer.
     ///
     /// The use of generics and static dispatching here allows us to use this function both for
     /// reading from a local file in the actual runtime, and from a data structure in tests.
+    ///
+    /// # Errors
+    /// Can fail if the output writer cannot be written into or flushed.
     pub fn output_accounts_into_csv_writer<W>(&self, writer: W) -> Result<(), Error>
     where
         W: std::io::Write,
@@ -124,6 +138,9 @@ impl Engine {
     /// Performs the actual CSV-formattin and "printing" of account data into `stdout`.
     ///
     /// Most likely called from `main()`.
+    ///
+    /// # Errors
+    /// Can fail if the `stdout` writer cannot be written into or flushed.
     pub fn output_accounts_into_stdout(&self) -> Result<(), Error> {
         // Obtaining a writer over `stdout` is dead simple
         let writer = std::io::stdout();

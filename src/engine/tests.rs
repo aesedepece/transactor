@@ -39,7 +39,7 @@ fn sample_csv_loading() {
 
     // Can load transactions from CSV data
     let mut engine = Engine::default();
-    assert_eq!(engine.load_transactions_from_reader(data), Ok(()));
+    engine.load_transactions_from_reader(data);
 
     // The total balance of client #1 should be 1.5 (1 + 2 - 1.5 = 1.5)
     assert_eq!(

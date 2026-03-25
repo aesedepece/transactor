@@ -9,6 +9,10 @@ pub struct CLI {
 }
 
 impl CLI {
+    /// Start the CLI.
+    ///
+    /// Simply reads and process arguments, forcing the app to exit if those are malformed in any
+    /// way.
     pub fn start() -> Self {
         // Skip arg at index 0, which is always the command name itself
         let mut args = std::env::args().skip(1);

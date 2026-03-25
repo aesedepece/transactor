@@ -57,6 +57,10 @@ impl Movement {
 
     /// Updates the status of the movement following a strict state machine that forbids
     /// non-compliant transitions.
+    ///
+    /// # Errors
+    /// Can fail if the transaction tries to perform a non-compliant status transition (e.g. try to
+    /// charge back a transaction that has not been disputed yet).
     pub fn update_status(&mut self, new_status: MovementStatus) -> Result<(), Error> {
         // Local `use` of `enum` members to ease readability of the `match` below
         use MovementStatus::*;

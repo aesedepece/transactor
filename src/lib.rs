@@ -1,3 +1,13 @@
+//! # Transactor
+//!
+//! A toy (yet intentionally robust) transaction processing engine and accounting system with
+//! support for deposits, withdrawals, disputes, resolutions and chargebacks.
+
+#![deny(missing_docs)]
+#![warn(clippy::missing_errors_doc)]
+#![warn(clippy::missing_panics_doc)]
+#![warn(clippy::missing_safety_doc)]
+
 /// Everything related to user accounts, balances, etc.
 pub mod accounts;
 /// Barebones implementation of a CLI that reads a file path from one and only one argument.
