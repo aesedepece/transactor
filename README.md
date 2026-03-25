@@ -4,6 +4,8 @@
     <br/>
     <a href="https://crates.io/crates/transactor"><img src="https://img.shields.io/crates/v/transactor.svg" alt="Crates.io page" /></a>
     <a href="https://github.com/aesedepece/transactor/actions"><img src="https://github.com/aesedepece/transactor/actions/workflows/ci.yml/badge.svg" alt="Build Status" /></a>
+    <a href="https://github.com/aesedepece/transactor/blob/master/Cargo.toml"><img src="https://img.shields.io/deps-rs/repo/github/aesedepece/transactor" alt="Dependencies Status" /></a>
+    <a href="https://docs.rs/crate/transactor/latest"><img alt="docs.rs" src="https://img.shields.io/docsrs/transactor"></a>
     <a href="https://github.com/aesedepece/transactor/graphs/contributors"><img src="https://img.shields.io/github/contributors/aesedepece/transactor.svg" alt="GitHub contributors" /></a>
     <a href="https://github.com/aesedepece/transactor/commits/master"><img src="https://img.shields.io/github/last-commit/aesedepece/transactor.svg" alt="Github last commit" /></a>
     <a href="https://github.com/aesedepece/transactor/blob/master/LICENSE"><img src="https://img.shields.io/github/license/aesedepece/transactor" alt="GPLv3 Licensed" /></a>
