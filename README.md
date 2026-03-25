@@ -14,7 +14,7 @@
 * **Dependency Austerity:** Dependencies are kept as minimal as possible in order to avoid bloating the project and potential security risks.
 * **Error Safety:** All business logic errors and I/O failures are logged into `stderr` with configurable log levels, ensuring `stdout` remains a clean data stream for downstream pipes or file redirection.
 
-## Usage
+## Basic Usage
 The application accepts a single argument: the path to the input CSV file.
 
 ```bash
@@ -23,10 +23,38 @@ cargo run -- transactions.csv > accounts.csv
 
 As per the requirements, adding any extra arguments will make the application fail.
 
-## Command Line Interface
+### Command Line Interface
 | Argument                   | Type | Description                                           |
 |:---------------------------| :--- | :---------------------------------------------------- |
 | `path_to_transactions_csv` | Path | The path to the CSV file containing transaction data. |
+
+## Advanced Usage
+
+Thanks to the flexibility of having this crate act as both a CLI tool and a standalone library, the engine can be 
+very easily integrated into very diverse runtimes.
+
+As a proof of this adaptability, I have included some additional examples described below.
+
+### Reading Input From `stdin`
+
+The `simple_stdin` example reads the transactions input from `stdin` instead of a file path provided as an argument:
+```bash
+cat transactions.csv | RUST_LOG=trace cargo run --example simple_stdin > accounts.csv
+```
+
+### Processing Input From Multiple Clients Over TCP
+
+The `tokio_tcp` example showcases the concurrent processing of transaction inputs coming from multiple clients over TCP:
+```bash
+# Start the server at 127.0.0.1:8080
+RUST_LOG=trace cargo run --example tokio_tcp > accounts.csv
+
+# Use netcat on a different terminal to send the transactions input CSV file over TCP
+nc 127.0.0.1 8080 < transactions.csv
+
+# Stop the server (uses SIGINT signal, so Ctrl+C also works)
+kill -INT $(pidof tokio_tcp)
+```
 
 ### Logging
 Logging of errors and diagnostics are handled via the `log` crate abstraction.

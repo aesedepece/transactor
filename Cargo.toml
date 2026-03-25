@@ -30,6 +30,10 @@ log = "0.4.29"
 # Goes hand in hand with `log`.
 env_logger = "0.11.9"
 
+[dev-dependencies]
+# Used in specific examples for demoing streamed usage
+tokio = { version = "1.50.0", features = ["full"] }
+
 [features]
 # This feature flag acts as a toggle to enforce deterministic ordering of account lines.
 deterministic = []
